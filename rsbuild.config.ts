@@ -45,6 +45,9 @@ export default defineConfig({
     // 启用 lazy compilation 可以显著减少开发启动时编译的模块数量，从而提升启动时间。
     lazyCompilation: true
   },
+  server: {
+    port: 7788
+  },
   performance: {
     chunkSplit: {
       strategy: 'split-by-experience'

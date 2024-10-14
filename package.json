@@ -15,7 +15,10 @@
     "@element-plus/icons-vue": "^2.3.1",
     "@module-federation/enhanced": "^0.6.6",
     "d3": "^7.9.0",
+    "ef-infinite-canvas": "^0.6.7",
     "element-plus": "^2.8.3",
+    "fabric": "^6.4.3",
+    "konva": "^9.3.15",
     "pinia": "^2.2.2",
     "vue": "^3.5.3",
     "vue-router": "4"
