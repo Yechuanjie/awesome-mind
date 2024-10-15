@@ -1,83 +1,171 @@
 import Konva from 'konva'
 import { MindOptions } from './type/mind'
+import { Layer } from 'konva/lib/Layer'
 
 // awesome-mind
 export class AwesomeMind {
+  /** 容器 */
   stage!: Konva.Stage
-  mindLayer!: Konva.Layer
+  /** 坐标轴层 */
+  axisLayer!: Konva.Layer
+  /** 思维导图层 */
+  mindMapLayer!: Konva.Layer
+  // /** 无限画布层 */
+  // infiniteCanvasLayer!: Konva.Layer
   nodes: Konva.Group[] = []
+
+  scrollX = 0 // 初始滚动距离X
+  scrollY = 0 // 初始滚动距离Y
 
   constructor(options: MindOptions) {
     // 创建 Stage 画布容器
     this.stage = new Konva.Stage({
       container: options.container,
-      width: options.width || window.innerWidth,
-      height: options.height || window.innerHeight,
-      draggable: true
+      width: options.width,
+      height: options.height
     })
 
-    // 设计2个Konva.Layer，分别用于绘制背景和思维导图
-    // 创建思维导图图层
-    this.mindLayer = new Konva.Layer()
-    this.stage.add(this.mindLayer)
+    this.mindMapLayer = new Konva.Layer()
+    this.stage.add(this.mindMapLayer)
 
-    this.initMindLayer()
+    this.renderScene()
 
-    // 监听窗口大小变化
-    window.addEventListener('resize', () => {
-      const width = window.innerWidth
-      const height = window.innerHeight
-      this.stage.width(width)
-      this.stage.height(height)
+    // 监听滚轮事件，用来模拟滚动
+    this.stage.addEventListener('wheel', e => {
+      const event = e as WheelEvent
+      this.scrollX = -event.deltaX
+      this.scrollY = -event.deltaY
+      this.renderScene()
     })
   }
 
-  initMindLayer() {
-    // 设置背景颜色
-    this.setBackgroundColor('#f3f3f5')
-    // 绘制背景点
-    this.drawDots('#d2d2d2')
-    // 示例：创建初始矩形节点
+  renderScene() {
+    // this.stage.clear()
+    this.drawAxis(this.mindMapLayer, { scrollX: this.scrollX, scrollY: this.scrollY })
     this.addNode(100, 100, 'blue', '根节点')
   }
 
-  // 设置背景颜色的方法
-  setBackgroundColor(color: string) {
-    const backgroundRect = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: this.stage.width(),
-      height: this.stage.height(),
-      fill: color
+  /** 绘制坐标轴 */
+  drawAxis(layer: Layer, { scrollX, scrollY } = { scrollX: 0, scrollY: 0 }) {
+    const rectH = 100 // 纵轴刻度间距
+    const rectW = 100 // 横轴刻度间距
+    const tickLength = 8 // 刻度线长度
+    const stageWidth = layer.getStage().width()
+    const stageHeight = layer.getStage().height()
+
+    // 清空当前的layer
+    layer.destroyChildren()
+
+    // 绘制横轴和纵轴虚线
+    const axisLines = new Konva.Line({
+      points: [
+        -scrollX,
+        0,
+        stageWidth - scrollX,
+        0, // 横轴
+        0,
+        -scrollY,
+        0,
+        stageHeight - scrollY // 纵轴
+      ],
+      stroke: 'red',
+      strokeWidth: 2,
+      dash: [10, 10]
     })
+    layer.add(axisLines)
 
-    this.mindLayer.add(backgroundRect)
-  }
+    // 绘制纵轴的刻度
+    for (let i = 0; i < scrollY / rectH; i++) {
+      const yPos = -i * rectH
 
-  // 创建背景点
-  drawDots(color: string) {
-    const dotSize = 1 // 点的大小
-    const spacing = 40 // 点之间的间隔
-    const width = this.stage.width()
-    const height = this.stage.height()
+      const tickLine = new Konva.Line({
+        points: [0, yPos, tickLength, yPos],
+        stroke: 'red',
+        strokeWidth: 2
+      })
 
-    // 计算可见区域内的点数量
-    const numCols = Math.ceil(width / spacing)
-    const numRows = Math.ceil(height / spacing)
+      const tickText = new Konva.Text({
+        x: -25,
+        y: yPos - 10,
+        text: (-i).toString(),
+        fontSize: 20,
+        fontFamily: 'Arial',
+        fill: 'red'
+      })
 
-    // 绘制点
-    for (let i = 0; i <= numCols; i++) {
-      for (let j = 0; j <= numRows; j++) {
-        this.mindLayer.add(
-          new Konva.Circle({
-            x: i * spacing,
-            y: j * spacing,
-            radius: dotSize,
-            fill: color
-          })
-        )
-      }
+      layer.add(tickLine)
+      layer.add(tickText)
     }
+
+    for (let i = 0; i < (stageHeight - scrollY) / rectH; i++) {
+      const yPos = i * rectH
+
+      const tickLine = new Konva.Line({
+        points: [0, yPos, tickLength, yPos],
+        stroke: 'red',
+        strokeWidth: 2
+      })
+
+      const tickText = new Konva.Text({
+        x: -25,
+        y: yPos - 10,
+        text: i.toString(),
+        fontSize: 20,
+        fontFamily: 'Arial',
+        fill: 'red'
+      })
+
+      layer.add(tickLine)
+      layer.add(tickText)
+    }
+
+    // 绘制横轴的刻度
+    for (let i = 1; i < scrollX / rectW; i++) {
+      const xPos = -i * rectW
+
+      const tickLine = new Konva.Line({
+        points: [xPos, 0, xPos, tickLength],
+        stroke: 'red',
+        strokeWidth: 2
+      })
+
+      const tickText = new Konva.Text({
+        x: xPos - 10,
+        y: -30,
+        text: (-i).toString(),
+        fontSize: 20,
+        fontFamily: 'Arial',
+        fill: 'red'
+      })
+
+      layer.add(tickLine)
+      layer.add(tickText)
+    }
+
+    for (let i = 1; i < (stageWidth - scrollX) / rectW; i++) {
+      const xPos = i * rectW
+
+      const tickLine = new Konva.Line({
+        points: [xPos, 0, xPos, tickLength],
+        stroke: 'red',
+        strokeWidth: 2
+      })
+
+      const tickText = new Konva.Text({
+        x: xPos - 10,
+        y: -30,
+        text: i.toString(),
+        fontSize: 20,
+        fontFamily: 'Arial',
+        fill: 'red'
+      })
+
+      layer.add(tickLine)
+      layer.add(tickText)
+    }
+
+    // 重新渲染图层
+    layer.draw()
   }
 
   // 添加节点的方法
@@ -112,10 +200,10 @@ export class AwesomeMind {
     nodeGroup.add(labelText)
 
     // 将节点组添加到图层
-    this.mindLayer.add(nodeGroup)
+    this.mindMapLayer.add(nodeGroup)
     this.nodes.push(nodeGroup) // 存储节点
 
-    this.mindLayer.draw() // 重新绘制图层
+    this.mindMapLayer.draw() // 重新绘制图层
   }
 
   // 其他方法，如移除节点、更新连线等
